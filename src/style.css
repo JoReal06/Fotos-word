@@ -1,0 +1,85 @@
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root{
+  --light:#9fbabb;
+  --black:#5a7374;
+}
+
+body{
+  width: 100%;
+  height: 100dvh;
+  background-image: linear-gradient(var(--light),var(--black))
+}
+
+.form{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  background-color: #eee;
+  border-radius: 20px;
+  box-shadow: 2px 2px 35px 6px#111;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  gap:2px;
+  padding: clamp(10px, 2dvw,17px);
+  width: clamp(420px,49dvw,700px);
+  
+  & .form__label{
+    font-weight: bold;
+    margin: 9px;
+    display: inline-block;
+    font-size: 24px;
+  }
+
+  & .form__input{
+    font-size: .97rem
+  }
+
+  & .form__input::file-selector-button{
+   border: none;
+   font-size: clamp(1rem, calc(1rem + 2dvw), 1.1rem);
+   background-color: var(--black);
+   border-radius: 5px;
+   padding: 5px 8px;
+   transition: 
+        background-color .3s ease,
+        color .3s ease;
+  }
+  
+  & .form__input::file-selector-button:hover{
+    background-color: #333;
+    cursor: pointer;
+    color: #fff;
+  }
+
+  & button{
+    background-color: #0052b1;
+    color: #fff;
+    align-self: center;
+    border: none;
+    border-radius: 7px;
+    padding: 9px;
+    font-size: 19px;
+    margin-top: 13px;
+    cursor: pointer;
+    text-shadow: 1px 1px 13px #fff;
+    box-shadow: 1px 1px 10px 3px #000;
+  }
+
+  & button:hover{
+    background-color: #00b;
+  }
+}
+
+.modal{
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  backdrop-filter: blur(2px);
+}

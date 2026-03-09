@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="shortcut icon" href="public/Fav-icon.jpeg" type="image/x-icon">
+  <title>Creación de word</title>
+</head>
+<body>
+
+  <form class="form">
+    
+    <label class="form__label" for="inputCedula">Fotos de cedula *</label>
+    <input class="form__input" type="file" name="cedula" id="inputCedula" accept="image/*" multiple>
+
+    <label class="form__label" for="inputMatri">Fotos de Matrícula del negocio</label>
+    <input class="form__input" type="file" name="matriculaNeg" id="inputMatri" accept="image/*" multiple>
+    
+    <label class="form__label" for="inputNumRuc">Fotos de Num RUC</label>
+    <input class="form__input" type="file" name="numRuc" id="inputNumRuc" accept="image/*" multiple>
+    
+    <label class="form__label" for="inputCirculacion">Fotos de Circulacion vehicular</label>
+    <input class="form__input" type="file" name="circulacion" id="inputCirculacion" accept="image/*" multiple>
+
+    <label class="form__label" for="inputFactura">Fotos Extras (Facturas, Solvencia, Constancia Salarial y etc...)</label>
+    <input class="form__input" type="file" name="factura" id="inputFactura" accept="image/*" multiple>
+
+    <label class="form__label" for="inputInteNeg">Fotos de interior del negocio *</label>
+    <input class="form__input" type="file" name="interiorNeg" id="inputInteNeg" accept="image/*" multiple>
+    
+    <label class="form__label" for="inputExteNeg">Foto de exterior del negocio *</label>
+    <input class="form__input" type="file" name="exteriorNeg" id="inputExteNeg" accept="image/*">
+    
+
+    <button type="submit">Crear Word</button>
+  </form>
+  
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
