@@ -1,33 +1,48 @@
 import "./style.css"
 import Cropper from "cropperjs"
 import "cropperjs/dist/cropper.css"
+import { PDFGenerator } from "./PDFGenerator.js"
+
 const form = document.querySelector(".form")
 const inputs = document.querySelectorAll('input[type="file"]')
 
 const cedulas = []
-const  matriNeg = []
-const numRuc = []
+let matriNeg;
+let numRuc
 const circulacion = []
-const Facturas = []
+const facturas = []
 const interiorNeg = []
-const exterior = []
+let exterior;
 
 
 form.addEventListener("submit",(e) =>{
-    e.preventDefault()
+    e.preventDefault() 
+
+    const obligatorios = ["cedula","exteriorNeg","interiorNeg"]
+
+    for(const input of inputs){
+        if(obligatorios.includes(input.name) && input.files.length === 0)
+        {
+            alert(`El campo ${input.name} requiere al maneo suna imagen`)
+            return
+        }
+    }
 
     const fotos = []
     let indice = 0
 
     inputs.forEach((input) =>{
-        const file = Array.from(input.files)
-        fotos.push(...file)
+        const files = Array.from(input.files)
+        files.forEach(file =>{
+            fotos.push({file: file, tipo: input.name})
+        })
     })
+
 
     const dialog = document.createElement("dialog")
     const frag = document.createDocumentFragment()
 
-    const imagen = URL.createObjectURL(fotos[indice])
+    const imagen = URL.createObjectURL(fotos[indice].file)
 
     dialog.innerHTML = 
             `
@@ -35,7 +50,8 @@ form.addEventListener("submit",(e) =>{
                 <button type="button" id="rotar">Rotar</button>
                 <button type="button" id="recortar">Recortar</button>
                 <button type="button" id="confirmar">Confirmar</button>
-                <button type="button" id="eliminar">Eliminar</button>
+                <button type="button" id="eliminar">Descartar foto</button>
+                <button type="button" id="cancelar">Cancelar recorte</button>
 
                 <button id="close"><span class="material-symbols-outlined">close</span></button>
             </div>
@@ -46,8 +62,16 @@ form.addEventListener("submit",(e) =>{
     frag.appendChild(dialog)
     document.body.appendChild(frag)
     dialog.showModal()
-
+    
     const img = dialog.querySelector("img")
+    
+    const rotar = dialog.querySelector("#rotar")
+    const recortar = dialog.querySelector("#recortar")
+    const confirmar = dialog.querySelector("#confirmar")
+    const eliminar = dialog.querySelector("#eliminar")
+    const cancelarRe = dialog.querySelector("#cancelar")
+
+    const close = dialog.querySelector("#close")
 
     const cropper = new Cropper(img,{
         viewMode: 1,
@@ -55,40 +79,95 @@ form.addEventListener("submit",(e) =>{
         responsive:true
     })
 
-    const close = dialog.querySelector("#close")
+    //CERRAR EL MODAL
     close.addEventListener("click",() =>{
         dialog.close()
         dialog.remove()
     })
 
-    const confirmar = dialog.querySelector("#confirmar")
+    let contador = 1;
+    //GUardar foto
     confirmar.addEventListener("click", () => {
+        
+        const canvas = cropper.getCroppedCanvas()
 
-        indice++
+        canvas.toBlob((blob) =>{
+            const nuevaImagen = new File([blob],`editada${contador}.png`,{type: "image/png"})
+            contador++
 
-        if(indice < fotos.length){
-            const nuevaImagen = URL.createObjectURL(fotos[indice])
-            cropper.replace(nuevaImagen)
 
-        }else{
-            // logica para crear el word
-            dialog.close()
-            dialog.remove()
-        }
+            const tipo = fotos[indice].tipo
+            
+            if(tipo === "cedula") cedulas.push(nuevaImagen)
+            if(tipo === "matriculaNeg") matriNeg = nuevaImagen
+            if(tipo === "numRuc") numRuc = nuevaImagen
+            if(tipo === "circulacion") circulacion.push(nuevaImagen)
+            if(tipo === "factura") facturas.push(nuevaImagen)
+            if(tipo === "interiorNeg") interiorNeg.push(nuevaImagen)
+            if(tipo === "exteriorNeg") exterior = nuevaImagen
+
+            indice++
+
+            if(indice < fotos.length)
+            {
+                const nueva = URL.createObjectURL(fotos[indice].file)
+                cropper.replace(nueva)
+            }
+            else{
+                dialog.close()
+                dialog.remove()
+
+                const pdf = new PDFGenerator({
+                    cedulas,
+                    matriNeg,
+                    numRuc,
+                    circulacion,
+                    facturas,
+                    interiorNeg,
+                    exterior
+                })
+
+                pdf.generar()
+            }
+        })
     })
 
-    const rotar = dialog.querySelector("#rotar")
+
+    //Rotar la imagen del cropper
     rotar.addEventListener("click",()=>{
         cropper.rotate(90)
     })
 
-    const recortar = dialog.querySelector("#recortar")
-    console.log(recortar)
+    //Recortar imagen
     recortar.addEventListener("click",()=>{
         const canvas = cropper.getCroppedCanvas()
         const nuevaImagen = canvas.toDataURL("image/png")
         cropper.replace(nuevaImagen)
     })
+
+    //Cancelar recorte
+    cancelarRe.addEventListener("click",()=>{
+        cropper.clear()
+    })
+
+    //Descartar foto que se mira visualmente
+    eliminar.addEventListener("click",()=>{
+        fotos.splice(indice, 1)
+
+        if(fotos.length === 0){
+            dialog.close()
+            dialog.remove()
+            return
+        }
+
+        if(indice >= fotos.length){
+            indice = fotos.length - 1
+        }
+
+        const nuevaImagen = URL.createObjectURL(fotos[indice].file)
+        cropper.replace(nuevaImagen)
+    })
+
 })
 
 
