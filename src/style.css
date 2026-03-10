@@ -26,8 +26,9 @@ body{
   display: flex;
   flex-direction: column;
   gap:2px;
-  padding: clamp(10px, 2dvw,17px);
+  padding: clamp(7px, 1.5dvw,10px);
   width: clamp(420px,49dvw,700px);
+
   
   & .form__label{
     font-weight: bold;
@@ -37,16 +38,16 @@ body{
   }
 
   & .form__input{
-    font-size: .97rem
+    font-size: .97rem;
   }
 
   & .form__input::file-selector-button{
-   border: none;
-   font-size: clamp(1rem, calc(1rem + 2dvw), 1.1rem);
-   background-color: var(--black);
-   border-radius: 5px;
-   padding: 5px 8px;
-   transition: 
+    border: none;
+    font-size: clamp(1rem, calc(1rem + 2dvw), 1.1rem);
+    background-color: var(--black);
+    border-radius: 5px;
+    padding: 5px 8px;
+    transition: 
         background-color .3s ease,
         color .3s ease;
   }
@@ -81,5 +82,57 @@ body{
   top: 50%;
   left: 50%;
   transform: translate(-50%,-50%);
-  backdrop-filter: blur(2px);
+  width: 100%;
+  height: 100dvh;
+  background-color: #000;
+  padding: 10px;
+
+  & .menu{
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 13px;
+    position: sticky;
+    top: 0;
+    margin-bottom: 14px;
+  }
+
+  & .menu button{
+    padding: 5px 8px;
+    border-radius: 6px;
+    font-size: 15px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  & .menu button span{
+    font-weight: bold;
+  }
+
+  & .menu button:has(span){
+    position: absolute;
+    right: 9px;
+    display: flex;
+    align-items: center;
+    background-color: #b00;
+  }
+
+  & #rotar{
+    background-color: #00b;
+    color: #fff;
+  }
+
+  & #recortar{
+    background-color: #ff0;
+  }
+
+  & #confirmar{
+    background-color: #0b0;
+  }
+
+  & #eliminar{
+    background-color: red;
+    color: #fff;
+  }
 }
+

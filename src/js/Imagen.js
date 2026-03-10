@@ -1,9 +1,0 @@
-
-export class Imagen{
-
-    constructor()
-    {
-        
-    }
-
-}

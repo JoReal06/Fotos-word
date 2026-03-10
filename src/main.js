@@ -1,40 +1,94 @@
 import "./style.css"
-
+import Cropper from "cropperjs"
+import "cropperjs/dist/cropper.css"
 const form = document.querySelector(".form")
+const inputs = document.querySelectorAll('input[type="file"]')
+
+const cedulas = []
+const  matriNeg = []
+const numRuc = []
+const circulacion = []
+const Facturas = []
+const interiorNeg = []
+const exterior = []
 
 
 form.addEventListener("submit",(e) =>{
     e.preventDefault()
-    
-    const modal  = document.createElement("dialog")
+
+    const fotos = []
+    let indice = 0
+
+    inputs.forEach((input) =>{
+        const file = Array.from(input.files)
+        fotos.push(...file)
+    })
+
+    const dialog = document.createElement("dialog")
     const frag = document.createDocumentFragment()
 
-    modal.innerHTML = 
-    `
-        <button type="submit">Rotar</button>
-        <button type="submit">Recortar</button>
-        <button type="submit">r</button>
-    `
+    const imagen = URL.createObjectURL(fotos[indice])
 
-    frag.appendChild(modal)
+    dialog.innerHTML = 
+            `
+            <div class="menu">
+                <button type="button" id="rotar">Rotar</button>
+                <button type="button" id="recortar">Recortar</button>
+                <button type="button" id="confirmar">Confirmar</button>
+                <button type="button" id="eliminar">Eliminar</button>
+
+                <button id="close"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            
+            <img class="menu__img" src="${imagen}">
+            `
+    dialog.classList.add("modal")
+    frag.appendChild(dialog)
     document.body.appendChild(frag)
+    dialog.showModal()
 
-    const data = new FormData(form);
+    const img = dialog.querySelector("img")
 
+    const cropper = new Cropper(img,{
+        viewMode: 1,
+        autoCrop: false,
+        responsive:true
+    })
 
+    const close = dialog.querySelector("#close")
+    close.addEventListener("click",() =>{
+        dialog.close()
+        dialog.remove()
+    })
 
-    // if(data.getAll("cedula").length == 1){
-    //     alert("Seleccione las fotos de cédula, en ambas caras")
-    //     return
-    // }
+    const confirmar = dialog.querySelector("#confirmar")
+    confirmar.addEventListener("click", () => {
 
-    // if(data.getAll("interiorNeg").length == 1){
-    //     alert("Seleccione las fotos del interior del negocio")
-    //     return
-    // }
+        indice++
 
-    
+        if(indice < fotos.length){
+            const nuevaImagen = URL.createObjectURL(fotos[indice])
+            cropper.replace(nuevaImagen)
 
+        }else{
+            // logica para crear el word
+            dialog.close()
+            dialog.remove()
+        }
+    })
+
+    const rotar = dialog.querySelector("#rotar")
+    rotar.addEventListener("click",()=>{
+        cropper.rotate(90)
+    })
+
+    const recortar = dialog.querySelector("#recortar")
+    console.log(recortar)
+    recortar.addEventListener("click",()=>{
+        const canvas = cropper.getCroppedCanvas()
+        const nuevaImagen = canvas.toDataURL("image/png")
+        cropper.replace(nuevaImagen)
+    })
 })
 
 
