@@ -1,174 +1,196 @@
 import "./style.css"
-import Cropper from "cropperjs"
+import Cropper from "cropperjs";
 import "cropperjs/dist/cropper.css"
+
 import { PDFGenerator } from "./PDFGenerator.js"
 
-const form = document.querySelector(".form")
 const inputs = document.querySelectorAll('input[type="file"]')
 
-const cedulas = []
-let matriNeg;
-let numRuc
-const circulacion = []
-const facturas = []
-const interiorNeg = []
-let exterior;
 
+function validar(inputs)
+{
+    const obligatorios = ["cedula","interiorNeg","exteriorNeg"]
 
-form.addEventListener("submit",(e) =>{
-    e.preventDefault() 
+    const faltan = Array.from(inputs).some(input => {
 
-    const obligatorios = ["cedula","exteriorNeg","interiorNeg"]
-
-    for(const input of inputs){
         if(obligatorios.includes(input.name) && input.files.length === 0)
         {
-            alert(`El campo ${input.name} requiere al maneo suna imagen`)
-            return
+            alert(`Tiene que haber fotos de ${input.name}`)
+            return true
         }
-    }
 
-    const fotos = []
-    let indice = 0
+        if(input.name === "cedula")
+        {
+            const cantidad = input.files.length
 
-    inputs.forEach((input) =>{
-        const files = Array.from(input.files)
-        files.forEach(file =>{
-            fotos.push({file: file, tipo: input.name})
-        })
+            if(cantidad % 2 !== 0)
+            {
+                alert("Las fotos de cedula deben, en caso de agregar más de una persona, tiene que ser pares el num de fotos a ingresar (ejemplo: 2,4 .....")
+                return true
+            }
+        }
+
+        return false
     })
 
+    return faltan
+}
+
+function obtenerFotos(inputs)
+{
+    const inputsConFotos = []
+
+    inputs.forEach((input) => {
+
+        const fotosInput = []
+
+        for(let i = 0; i < input.files.length; i++)
+        {
+            const file = input.files[i]
+            const foto = URL.createObjectURL(file)
+            fotosInput.push(foto)
+        }
+
+        if(fotosInput.length > 0)
+        {
+            inputsConFotos.push({
+                nameInput: input.name,
+                fotosInput: fotosInput
+            })
+        }
+    })
+
+    return inputsConFotos
+}
+
+
+function cargarSiguienteFoto(fotoIndex,inputIndex,cropper,inputsConFotos,dialog)
+{
+    if(fotoIndex < (inputsConFotos[inputIndex].fotosInput.length - 1)){
+            fotoIndex++
+    }
+    else{
+        inputIndex++
+        fotoIndex = 0
+    }
+
+    if(inputIndex >= inputsConFotos.length){
+        dialog.close()
+        dialog.remove()
+        const pdf = new PDFGenerator(inputsConFotos)
+
+        return
+    }
+
+    const nuevaFoto = inputsConFotos[inputIndex].fotosInput[fotoIndex]
+
+    cropper.replace(nuevaFoto)
+}
+
+
+function crearModal(primeraFoto, inputsConFotos){
 
     const dialog = document.createElement("dialog")
-    const frag = document.createDocumentFragment()
-
-    const imagen = URL.createObjectURL(fotos[indice].file)
+    dialog.classList.add("modal")
+    const espacioTrabajo = document.createDocumentFragment()
 
     dialog.innerHTML = 
-            `
-            <div class="menu">
-                <button type="button" id="rotar">Rotar</button>
-                <button type="button" id="recortar">Recortar</button>
-                <button type="button" id="confirmar">Confirmar</button>
-                <button type="button" id="eliminar">Descartar foto</button>
-                <button type="button" id="cancelar">Cancelar recorte</button>
+                
+                `
+                    <div class="menu">
 
-                <button id="close"><span class="material-symbols-outlined">close</span></button>
-            </div>
-            
-            <img class="menu__img" src="${imagen}">
-            `
-    dialog.classList.add("modal")
-    frag.appendChild(dialog)
-    document.body.appendChild(frag)
+                        <button id="rotar">rotar</button>
+                        <button id="recortar">recortar</button>
+                        <button id="confirmar">Confirmar</button>
+                        <button id="descartar">Descartar</button>
+                        <button id="cancelarRecortado">Cancelar Recortado</button>
+                        <button id="close">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+
+                    </div>
+                        <img src="${primeraFoto}">
+                `
+    espacioTrabajo.append(dialog)
+    document.body.append(espacioTrabajo)
     dialog.showModal()
-    
-    const img = dialog.querySelector("img")
-    
+
     const rotar = dialog.querySelector("#rotar")
     const recortar = dialog.querySelector("#recortar")
     const confirmar = dialog.querySelector("#confirmar")
-    const eliminar = dialog.querySelector("#eliminar")
-    const cancelarRe = dialog.querySelector("#cancelar")
-
+    const descartar = dialog.querySelector("#descartar")
+    const cancelarRecortado = dialog.querySelector("#cancelarRecortado")
     const close = dialog.querySelector("#close")
 
-    const cropper = new Cropper(img,{
-        viewMode: 1,
-        autoCrop: false,
-        responsive:true
+    const imgDialog = dialog.querySelector("img")
+
+    const cropper = new Cropper(imgDialog,{
+        viewMode:1,
+        aspectRatio:NaN,
     })
 
-    //CERRAR EL MODAL
-    close.addEventListener("click",() =>{
-        dialog.close()
-        dialog.remove()
-    })
-
-    let contador = 1;
-    //GUardar foto
-    confirmar.addEventListener("click", () => {
-        
-        const canvas = cropper.getCroppedCanvas()
-
-        canvas.toBlob((blob) =>{
-            const nuevaImagen = new File([blob],`editada${contador}.png`,{type: "image/png"})
-            contador++
+    let inputIndex = 0;
+    let fotoIndex = 0;
 
 
-            const tipo = fotos[indice].tipo
-            
-            if(tipo === "cedula") cedulas.push(nuevaImagen)
-            if(tipo === "matriculaNeg") matriNeg = nuevaImagen
-            if(tipo === "numRuc") numRuc = nuevaImagen
-            if(tipo === "circulacion") circulacion.push(nuevaImagen)
-            if(tipo === "factura") facturas.push(nuevaImagen)
-            if(tipo === "interiorNeg") interiorNeg.push(nuevaImagen)
-            if(tipo === "exteriorNeg") exterior = nuevaImagen
 
-            indice++
+    // Cerar el dialog
+    close.addEventListener("click", () => dialog.close())
 
-            if(indice < fotos.length)
-            {
-                const nueva = URL.createObjectURL(fotos[indice].file)
-                cropper.replace(nueva)
-            }
-            else{
-                dialog.close()
-                dialog.remove()
-
-                const pdf = new PDFGenerator({
-                    cedulas,
-                    matriNeg,
-                    numRuc,
-                    circulacion,
-                    facturas,
-                    interiorNeg,
-                    exterior
-                })
-
-                pdf.generar()
-            }
-        })
-    })
-
-
-    //Rotar la imagen del cropper
+    //rotar la imagen
     rotar.addEventListener("click",()=>{
         cropper.rotate(90)
     })
 
-    //Recortar imagen
+    //recortar selecion que sale en el grooper
     recortar.addEventListener("click",()=>{
         const canvas = cropper.getCroppedCanvas()
-        const nuevaImagen = canvas.toDataURL("image/png")
-        cropper.replace(nuevaImagen)
+        const recorte = canvas.toDataURL("image/png")
+        cropper.replace(recorte)
+    })
+    
+
+    //confirmar la imagen vista y si es la ultima imagen, crear el pddf
+    confirmar.addEventListener("click", ()=>{
+        const canvas = cropper.getCroppedCanvas()
+        const imagenFinal = canvas.toDataURL("image/png")
+
+        inputsConFotos[inputIndex].fotosInput[fotoIndex] = imagenFinal
+
+        cargarSiguienteFoto(fotoIndex,inputIndex,cropper,inputsConFotos,dialog)
+    })
+    
+    //descartar la imagen que sale el crooper y pasar a la siguiente
+    descartar.addEventListener("click",()=>{
+        cargarSiguienteFoto(fotoIndex,inputIndex,cropper,inputsConFotos,dialog)
     })
 
-    //Cancelar recorte
-    cancelarRe.addEventListener("click",()=>{
+    //Cancela la accion de recortado del cropper
+    cancelarRecortado.addEventListener("click",()=>{
         cropper.clear()
     })
 
-    //Descartar foto que se mira visualmente
-    eliminar.addEventListener("click",()=>{
-        fotos.splice(indice, 1)
+}
 
-        if(fotos.length === 0){
-            dialog.close()
-            dialog.remove()
-            return
-        }
 
-        if(indice >= fotos.length){
-            indice = fotos.length - 1
-        }
+//ACION
+const pdf = document.querySelector(".form")
 
-        const nuevaImagen = URL.createObjectURL(fotos[indice].file)
-        cropper.replace(nuevaImagen)
-    })
+pdf.addEventListener("submit",(e) => {
+    e.preventDefault()
+
+    const hay = validar(inputs)
+    if(hay)
+    {
+        return
+    }
+
+    const inputsConFotos = obtenerFotos(inputs)
+
+    crearModal(inputsConFotos[0].fotosInput[0], inputsConFotos)
 
 })
+
 
 
 
