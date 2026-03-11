@@ -6,6 +6,9 @@ import { PDFGenerator } from "./PDFGenerator.js"
 
 const inputs = document.querySelectorAll('input[type="file"]')
 
+let inputIndex = 0;
+let fotoIndex = 0;
+let recorte = 1;
 
 function validar(inputs)
 {
@@ -38,7 +41,7 @@ function validar(inputs)
 
 function obtenerFotos(inputs)
 {
-    const inputsConFotos = []
+    const inputsConSusFotos = []
 
     inputs.forEach((input) => {
 
@@ -46,45 +49,76 @@ function obtenerFotos(inputs)
 
         for(let i = 0; i < input.files.length; i++)
         {
-            const file = input.files[i]
-            const foto = URL.createObjectURL(file)
-            fotosInput.push(foto)
+            const fotoFile = input.files[i]
+            fotosInput.push(fotoFile)
         }
 
         if(fotosInput.length > 0)
         {
-            inputsConFotos.push({
+            inputsConSusFotos.push({
                 nameInput: input.name,
                 fotosInput: fotosInput
             })
         }
     })
 
-    return inputsConFotos
+    return inputsConSusFotos
+}
+
+async function guardarArchivo(cropper,inputsConFotos){
+    const canvas = cropper.getCroppedCanvas();
+   
+    const blob = await new Promise(resolve =>{
+        canvas.toBlob(resolve,"image/jpeg",0.85)
+    });
+
+    const file = new File([blob],`recortes${recorte}.jpeg`,{
+        type:"image/jpeg"
+    });
+
+    recorte++
+
+    inputsConFotos[inputIndex].fotosInput[fotoIndex] = file
+}      
+
+async function descartarArchivo(inputsConFotos) {
+    inputsConFotos[inputIndex].fotosInput.splice(fotoIndex,1)
 }
 
 
-function cargarSiguienteFoto(fotoIndex,inputIndex,cropper,inputsConFotos,dialog)
+async function cargarSiguienteFoto(cropper,inputsConFotos,dialog,descartar = false)
 {
+    await guardarArchivo(cropper,inputsConFotos)
+
+    if(descartar){
+       await descartarArchivo(inputsConFotos)   
+    }
+
     if(fotoIndex < (inputsConFotos[inputIndex].fotosInput.length - 1)){
-            fotoIndex++
+        fotoIndex++;
     }
     else{
-        inputIndex++
-        fotoIndex = 0
+        inputIndex++;
+        fotoIndex = 0;
     }
 
     if(inputIndex >= inputsConFotos.length){
         dialog.close()
         dialog.remove()
         const pdf = new PDFGenerator(inputsConFotos)
+        pdf.generarPDF()
 
         return
     }
 
-    const nuevaFoto = inputsConFotos[inputIndex].fotosInput[fotoIndex]
+    const nuevaFoto = generarImagenAMostrar(inputsConFotos[inputIndex].fotosInput[fotoIndex])
 
     cropper.replace(nuevaFoto)
+}
+
+function generarImagenAMostrar(file){
+    const fotoReal = URL.createObjectURL(file)
+    return fotoReal
 }
 
 
@@ -93,23 +127,25 @@ function crearModal(primeraFoto, inputsConFotos){
     const dialog = document.createElement("dialog")
     dialog.classList.add("modal")
     const espacioTrabajo = document.createDocumentFragment()
+    const  foto = generarImagenAMostrar(primeraFoto)
 
     dialog.innerHTML = 
                 
                 `
                     <div class="menu">
 
-                        <button id="rotar">rotar</button>
-                        <button id="recortar">recortar</button>
-                        <button id="confirmar">Confirmar</button>
-                        <button id="descartar">Descartar</button>
-                        <button id="cancelarRecortado">Cancelar Recortado</button>
-                        <button id="close">
+                        <button type="button" id="rotar">Rotar</button>
+                        <button type="button" id="recortar">Recortar</button>
+                        <button type="button" id="mover">Mover img</button>
+                        <button type="button" id="confirmar">Confirmar</button>
+                        <button type="button" id="descartar">Descartar</button>
+                        <button type="button" id="cancelarRecortado">Cancelar Recortado</button>
+                        <button type="button" id="close">
                             <span class="material-symbols-outlined">close</span>
                         </button>
 
                     </div>
-                        <img src="${primeraFoto}">
+                        <img src="${foto}">
                 `
     espacioTrabajo.append(dialog)
     document.body.append(espacioTrabajo)
@@ -121,17 +157,18 @@ function crearModal(primeraFoto, inputsConFotos){
     const descartar = dialog.querySelector("#descartar")
     const cancelarRecortado = dialog.querySelector("#cancelarRecortado")
     const close = dialog.querySelector("#close")
+    const moverImagen = dialog.querySelector("#mover")
 
     const imgDialog = dialog.querySelector("img")
 
+    let dragMode;
+
     const cropper = new Cropper(imgDialog,{
+        autoCrop:false,
+        dragMode:dragMode,
         viewMode:1,
-        aspectRatio:NaN,
+        movable:true
     })
-
-    let inputIndex = 0;
-    let fotoIndex = 0;
-
 
 
     // Cerar el dialog
@@ -144,25 +181,29 @@ function crearModal(primeraFoto, inputsConFotos){
 
     //recortar selecion que sale en el grooper
     recortar.addEventListener("click",()=>{
-        const canvas = cropper.getCroppedCanvas()
-        const recorte = canvas.toDataURL("image/png")
-        cropper.replace(recorte)
+        cropper.setDragMode("crop")
+        dragMode = "crop"
+        confirmar.textContent = "Confirmar Recorte"
     })
     
+    moverImagen.addEventListener("click", ()=>{
+        cropper.setDragMode("move")
+        dragMode = "mover"
+    })
 
     //confirmar la imagen vista y si es la ultima imagen, crear el pddf
     confirmar.addEventListener("click", ()=>{
-        const canvas = cropper.getCroppedCanvas()
-        const imagenFinal = canvas.toDataURL("image/png")
 
-        inputsConFotos[inputIndex].fotosInput[fotoIndex] = imagenFinal
-
-        cargarSiguienteFoto(fotoIndex,inputIndex,cropper,inputsConFotos,dialog)
+        if(dragMode === "crop"){
+            confirmar.textContent = "Confirmar"
+        }
+        
+        cargarSiguienteFoto(cropper,inputsConFotos,dialog)
     })
     
     //descartar la imagen que sale el crooper y pasar a la siguiente
     descartar.addEventListener("click",()=>{
-        cargarSiguienteFoto(fotoIndex,inputIndex,cropper,inputsConFotos,dialog)
+        cargarSiguienteFoto(cropper,inputsConFotos,dialog,true)
     })
 
     //Cancela la accion de recortado del cropper
