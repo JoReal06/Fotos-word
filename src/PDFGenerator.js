@@ -1,60 +1,68 @@
-import { PDFDocument } from "pdf-lib"
+import { PDFDocument,PDFPage,rgb } from "pdf-lib"
 import { saveAs } from "file-saver"
 
+const layouts = {
+
+    cara_y_atras:{
+        imagenArriba:{x:5, y:430,width:602, height:340},
+        imagenAbajo:{x:5, y:70,width:602, height:340}
+    },
+
+    vertical:{
+        x:106,
+        y:82,
+        width:400,
+        height:700
+    }
+     
+
+}
+
+
+async function dibujar(){
+
+    const pdf = await PDFDocument.create();
+    const page = pdf.addPage([612,792])
+
+    page.drawRectangle({
+        x:layouts.cara_y_atras.imagenArriba.x,
+        y:layouts.cara_y_atras.imagenArriba.y,
+        width:layouts.cara_y_atras.imagenArriba.width,
+        height:layouts.cara_y_atras.imagenArriba.height,
+        borderColor:rgb(1,0,0),
+        borderWidth:2
+    })
+
+    page.drawRectangle({
+        x:layouts.cara_y_atras.imagenAbajo.x,
+        y:layouts.cara_y_atras.imagenAbajo.y,
+        width:layouts.cara_y_atras.imagenAbajo.width,
+        height:layouts.cara_y_atras.imagenAbajo.height,
+        borderColor:rgb(1,0,0),
+        borderWidth:2
+    })
+
+    const pdfBytes = await pdf.save()
+    const blob = new Blob([pdfBytes], {type: "application/pdf"})
+    saveAs(blob,"prueba.pdf")
+}
+
+
 class PDFGenerator{
-
-    constructor(data)
+    constructor()
     {
-        data.forEach(element => {
-                this[element.nameInput] = element.fotosInput
-        });
+        // data.forEach(element => {
+        //         this[element.nameInput] = element.fotosInput
+        // });
+
+        // this.pageWidth = 612;
+        // this.pageHeight = 792;
+        // this.margin = 15;
+        // this.usableWidth = this.pageWidth - (this.margin * 2)
+        // this.usableHeight = this.pageHeight - (this.margin * 2)
     }
 
-
-    /**
-     * 
-     * @param {*} pdfDoc 
-     * @param {*} fotos 
-     * @returns 
-     */
-    async paginaAdelanteAtras(pdfDoc,fotos){
-        let contador = 0;
-
-        if(fotos.length === 2)
-        {
-            const pagina = pdfDoc.addPage([612, 792])
-
-            const bytes1 = await fotos[1].arrayBuffer()
-            const bytes2 = await fotos[0].arrayBuffer()
-
-            const img1 = await pdfDoc.embedJpg(bytes1)
-            const img2 = await pdfDoc.embedJpg(bytes2)
-            
-            pagina.drawImage(img1,{
-                x:6,
-                y:391,
-                width:600,
-                height:390
-            })
-
-            pagina.drawImage(img2,{
-                x:6,
-                y:0,
-                width:600,
-                height:390
-            })
-            
-        }
-    }
-
-    async paginaVertical(){
-
-    }
-
-    async paginaTripleHorizontal(){
-
-    }
-
+    
     async generarPDF()
     {
         const pdf = await PDFDocument.create()
@@ -70,8 +78,7 @@ class PDFGenerator{
     }
 }
 
-
-
 export{
-    PDFGenerator
+    PDFGenerator,
+    dibujar
 }

@@ -2,7 +2,7 @@ import "./style.css"
 import Cropper from "cropperjs";
 import "cropperjs/dist/cropper.css"
 
-import { PDFGenerator } from "./PDFGenerator.js"
+import { PDFGenerator,dibujar } from "./PDFGenerator.js"
 
 const inputs = document.querySelectorAll('input[type="file"]')
 
@@ -219,6 +219,9 @@ const pdf = document.querySelector(".form")
 
 pdf.addEventListener("submit",(e) => {
     e.preventDefault()
+
+    dibujar()
+    return
 
     const hay = validar(inputs)
     if(hay)
