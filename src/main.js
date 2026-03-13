@@ -2,15 +2,30 @@ import "./style.css"
 import Cropper from "cropperjs";
 import "cropperjs/dist/cropper.css"
 
-import { PDFGenerator,dibujar } from "./PDFGenerator.js"
+import { PDFGenerator} from "./PDFGenerator.js"
 
 const inputs = document.querySelectorAll('input[type="file"]')
+
+
+const ordenSeleccion = []
+inputs.forEach(input =>{
+    input.addEventListener("change", ()=>{
+        for(let i = 0; i < input.files.length; i++)
+        {
+            ordenSeleccion.push({
+                nameInput:input.name,
+                file:input.files[i]
+            })
+        }
+    })
+})
+
 
 let inputIndex = 0;
 let fotoIndex = 0;
 let recorte = 1;
 
-function validar(inputs)
+function validar(inputs) 
 {
     const obligatorios = ["cedula","interiorNeg","exteriorNeg"]
 
@@ -22,16 +37,16 @@ function validar(inputs)
             return true
         }
 
-        if(input.name === "cedula")
+        if(input.name === "cedula" || input.name === "circulacion")
         {
             const cantidad = input.files.length
 
             if(cantidad % 2 !== 0)
             {
-                alert("Las fotos de cedula deben, en caso de agregar más de una persona, tiene que ser pares el num de fotos a ingresar (ejemplo: 2,4 .....")
+                alert(`Las fotos de ${input.name} deben, en caso de ser más de una persona, tiene que ser pares el numero de fotos a ingresar (ejemplo: 2,4 .....`)
                 return true
             }
-        }
+        }   
 
         return false
     })
@@ -39,28 +54,25 @@ function validar(inputs)
     return faltan
 }
 
-function obtenerFotos(inputs)
+function obtenerFotos()
 {
     const inputsConSusFotos = []
 
-    inputs.forEach((input) => {
+   ordenSeleccion.forEach(item =>{
+        let grupo = inputsConSusFotos.find(x => x.nameInput === item.nameInput)
 
-        const fotosInput = []
-
-        for(let i = 0; i < input.files.length; i++)
+        if(!grupo)
         {
-            const fotoFile = input.files[i]
-            fotosInput.push(fotoFile)
+            grupo = {
+                nameInput: item.nameInput,
+                fotosInput:[]
+            }
+
+            inputsConSusFotos.push(grupo)
         }
 
-        if(fotosInput.length > 0)
-        {
-            inputsConSusFotos.push({
-                nameInput: input.name,
-                fotosInput: fotosInput
-            })
-        }
-    })
+        grupo.fotosInput.push(item.file);
+   })
 
     return inputsConSusFotos
 }
@@ -85,7 +97,14 @@ async function descartarArchivo(inputsConFotos) {
     inputsConFotos[inputIndex].fotosInput.splice(fotoIndex,1)
 }
 
-
+/**
+ * 
+ * @param {Cropper} cropper 
+ * @param {Array} inputsConFotos 
+ * @param {HTMLDialogElement} dialog 
+ * @param {Boolean} descartar 
+ * @returns 
+ */
 async function cargarSiguienteFoto(cropper,inputsConFotos,dialog,descartar = false)
 {
     await guardarArchivo(cropper,inputsConFotos)
@@ -99,21 +118,20 @@ async function cargarSiguienteFoto(cropper,inputsConFotos,dialog,descartar = fal
     }
     else{
         inputIndex++;
-        fotoIndex = 0;
+        fotoIndex = 0;                                                                                                                                                                                                                                                                                                                              
     }
 
     if(inputIndex >= inputsConFotos.length){
         dialog.close()
         dialog.remove()
         const pdf = new PDFGenerator(inputsConFotos)
-        pdf.generarPDF()
-
+        pdf.generarPDF(inputsConFotos)
         return
     }
 
     const nuevaFoto = generarImagenAMostrar(inputsConFotos[inputIndex].fotosInput[fotoIndex])
-
     cropper.replace(nuevaFoto)
+    cropper.options.dragMode = "none"
 }
 
 function generarImagenAMostrar(file){
@@ -220,21 +238,14 @@ const pdf = document.querySelector(".form")
 pdf.addEventListener("submit",(e) => {
     e.preventDefault()
 
-    dibujar()
-    return
-
     const hay = validar(inputs)
     if(hay)
     {
         return
     }
 
-    const inputsConFotos = obtenerFotos(inputs)
+    const inputsConFotos = obtenerFotos()
 
     crearModal(inputsConFotos[0].fotosInput[0], inputsConFotos)
 
 })
-
-
-
-
